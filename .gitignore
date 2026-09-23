@@ -1,0 +1,9 @@
+git status.venv/
+venv/
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.DS_Store
+.env
+[Dd]ata/
+ruff-report.*
