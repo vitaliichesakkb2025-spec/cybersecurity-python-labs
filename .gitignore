@@ -1,5 +1,6 @@
-git status.venv/
+.venv/
 venv/
+.idea/
 __pycache__/
 *.py[cod]
 .ruff_cache/
