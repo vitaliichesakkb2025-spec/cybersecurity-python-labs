@@ -49,43 +49,25 @@ def create_user(username, password):
 
 
 def create_users(users_list):
-    """Створити CSV-базу користувачів із власною обробкою помилок доступу."""
+    """Перевірити набір і записати CSV без відкритих паролів."""
     rows = [
         create_user(username, password) for username, password in users_list
     ]
     if len({row[0] for row in rows}) != len(rows):
         raise ValidationError("Логіни мають бути унікальними.")
 
-    try:
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        with (DATA_DIR / "users.csv").open(
-            "w", encoding="utf-8", newline=""
-        ) as file:
-            csv.writer(file).writerows(rows)
-        return rows
-    except PermissionError:
-        print("Помилка: немає прав для запису бази користувачів.")
-        return []
-    except (IOError, OSError) as error:
-        print(f"Помилка створення файлу бази: {error}")
-        return []
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    with (DATA_DIR / "users.csv").open(
+        "w", encoding="utf-8", newline=""
+    ) as file:
+        csv.writer(file).writerows(rows)
+    return rows
 
 
 def read_users():
-    """Зчитати й провалідувати базу CSV із власною обробкою відсутності файлу."""
-    file_path = DATA_DIR / "users.csv"
-    try:
-        with file_path.open(encoding="utf-8", newline="") as file:
-            rows = list(csv.reader(file))
-    except FileNotFoundError:
-        print("Помилка: файл бази користувачів не знайдено.")
-        return []
-    except PermissionError:
-        print("Помилка: немає прав для читання бази користувачів.")
-        return []
-    except (IOError, OSError) as error:
-        print(f"Помилка читання файлу бази: {error}")
-        return []
+    """Зчитати та перевірити навчальну базу перед входом."""
+    with (DATA_DIR / "users.csv").open(encoding="utf-8", newline="") as file:
+        rows = list(csv.reader(file))
 
     names = set()
     for row in rows:
@@ -103,22 +85,17 @@ def read_users():
 
 
 def append_event(username, result):
-    """Безпечно додати подію в JSON-журнал із ізольованою обробкою помилок."""
+    """Додати подію до JSON-масиву без аргументів із паролями."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     path = DATA_DIR / "log.json"
+    try:
+        with path.open(encoding="utf-8") as file:
+            events = json.load(file)
+    except FileNotFoundError:
+        events = []
 
-    events = []
-    if path.exists():
-        try:
-            with path.open(encoding="utf-8") as file:
-                loaded = json.load(file)
-                if isinstance(loaded, list):
-                    events = loaded
-                else:
-                    raise ValueError("Журнал повинен містити JSON-масив.")
-        except (json.JSONDecodeError, ValueError) as error:
-            print(f"Попередження: файл журналу пошкоджено ({error}).")
-            raise
+    if not isinstance(events, list):
+        raise ValueError("Журнал повинен містити JSON-масив.")
 
     events.append(
         {
@@ -130,22 +107,14 @@ def append_event(username, result):
             "kwargs": {},
         }
     )
-
     temporary = path.with_suffix(".tmp")
-    try:
-        with temporary.open("w", encoding="utf-8") as file:
-            json.dump(events, file, ensure_ascii=False, indent=2)
-        temporary.replace(path)
-    except PermissionError:
-        print("Помилка: немає прав для запису журналу подій.")
-        raise
-    except (IOError, OSError) as error:
-        print(f"Помилка збереження журналу: {error}")
-        raise
+    with temporary.open("w", encoding="utf-8") as file:
+        json.dump(events, file, ensure_ascii=False, indent=2)
+    temporary.replace(path)
 
 
 def log_event(function):
-    """Декоратор для автоматичного журналювання результату входу."""
+    """Залогувати успіх, відмову або помилку валідації входу."""
 
     @wraps(function)
     def wrapper(*args, **kwargs):
@@ -163,7 +132,7 @@ def log_event(function):
 
 @log_event
 def login(username: str, password: str) -> bool:
-    """Перевірити облікові дані користувача у завантаженій users_db."""
+    """Перевірити облікові дані у списку users_db."""
     username, hash_value = create_user(username, password)
     for stored_username, stored_hash in users_db:
         if stored_username == username:
@@ -171,26 +140,28 @@ def login(username: str, password: str) -> bool:
     return False
 
 
-def run():
-    """Демонстрація Завдання 3: створення бази та виконання тестових входів."""
-    print(
-        f"\nЗавдання 3 | {HASH_ALGORITHM.upper()} | "
-        f"min_length={HASH_MIN_LENGTH} | salt={PERSONAL_SALT}"
-    )
-
-    created_rows = create_users(USERS_TO_REGISTER)
-    if not created_rows:
+def setup_database():
+    """Створити CSV-базу та самостійно обробити можливі помилки."""
+    try:
+        create_users(USERS_TO_REGISTER)
+        users_db[:] = read_users()
+        print(f"{'Логін':<14} {HASH_ALGORITHM.upper()}")
+        for username, hash_value in users_db:
+            print(f"{username:<14} {hash_value}")
+        return True
+    except FileNotFoundError:
+        print("Базу не знайдено.")
+        return False
+    except PermissionError:
+        print("Немає дозволу на роботу з базою.")
+        return False
+    except (IOError, ValidationError, ValueError) as error:
+        print(f"Не вдалося підготувати базу: {type(error).__name__}.")
         return False
 
-    loaded_rows = read_users()
-    if not loaded_rows:
-        return False
 
-    users_db[:] = loaded_rows
-    print(f"{'Логін':<14} {HASH_ALGORITHM.upper()}")
-    for username, hash_value in users_db:
-        print(f"{username:<14} {hash_value}")
-
+def run_login_attempts():
+    """Самостійно виконати тестові входи й обробити винятки."""
     attempts = (
         ("student01", "Study@Python01"),
         ("student01", "WrongPassword!"),
@@ -198,7 +169,6 @@ def run():
         ("", "Study@Python01"),
         ("student01", "short"),
     )
-
     completed = True
     for username, password in attempts:
         try:
@@ -208,7 +178,24 @@ def run():
             print(f"login({username!r}) -> ValidationError")
         except ValueError:
             print(f"login({username!r}) -> ValueError")
-        except (PermissionError, IOError, OSError):
+        except FileNotFoundError:
+            print("Файл журналу недоступний.")
             completed = False
-
+        except PermissionError:
+            print("Немає дозволу на запис журналу.")
+            completed = False
+        except IOError:
+            print("Помилка читання або запису журналу.")
+            completed = False
     return completed
+
+
+def run():
+    """Створити 10 навчальних облікових записів і виконати 5 входів."""
+    print(
+        f"\nЗавдання 3 | {HASH_ALGORITHM.upper()} | "
+        f"min_length={HASH_MIN_LENGTH} | salt={PERSONAL_SALT}"
+    )
+    if not setup_database():
+        return False
+    return run_login_attempts()
