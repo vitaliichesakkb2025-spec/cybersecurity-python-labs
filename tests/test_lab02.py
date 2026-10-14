@@ -20,6 +20,7 @@ from labs.lab02.task2 import (
 
 class UserModelTests(unittest.TestCase):
     """Test the account and permission models."""
+
     def setUp(self) -> None:
         """Build a fresh test user with a saved password."""
         self.user = User("student12", "student12@example.com")

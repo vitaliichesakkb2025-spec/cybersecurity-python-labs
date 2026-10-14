@@ -37,12 +37,11 @@ def demo() -> None:
     print(admin)
 
     if account.session is not None:
-        account.session.last_activity = (
-            datetime.now(timezone.utc) - timedelta(seconds=901)
+        account.session.last_activity = datetime.now(timezone.utc) - timedelta(
+            seconds=901
         )
     print(
-        "Authenticated after simulated timeout: "
-        f"{account.is_authenticated()}"
+        f"Authenticated after simulated timeout: {account.is_authenticated()}"
     )
     account.login("student12", "LabPassword12!", "192.0.2.12")
     account.logout()
