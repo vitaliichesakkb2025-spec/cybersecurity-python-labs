@@ -13,13 +13,22 @@ from typing import Any
 PASSWORD_ITERATIONS = 310_000
 PASSWORD_SALT_BYTES = 16
 SESSION_TIMEOUT_SEC = 900
-EMAIL_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]{2,63}@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
+EMAIL_PATTERN = re.compile(
+    r"^[A-Za-z][A-Za-z0-9_]{2,63}@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
+)
 
 
 class User:
     """A user identity with a salted, iterated password hash."""
 
-    def __init__(self, username: str, email: str, role: str = "user", active: bool = True) -> None:
+    def __init__(
+        self,
+        username: str,
+        email: str,
+        role: str = "user",
+        active: bool = True,
+    ) -> None:
+        """Initialize a user with a validated email and active status."""
         if not username.strip():
             raise ValueError("username must not be empty")
         self.username = username
@@ -47,15 +56,21 @@ class User:
             raise ValueError("password must contain at least 8 characters")
         self.__password_salt = os.urandom(PASSWORD_SALT_BYTES)
         self.__password_hash = hashlib.pbkdf2_hmac(
-            "sha256", password.encode("utf-8"), self.__password_salt, PASSWORD_ITERATIONS
+            "sha256",
+            password.encode("utf-8"),
+            self.__password_salt,
+            PASSWORD_ITERATIONS,
         )
 
     def check_password(self, password: str) -> bool:
-        """Compare a candidate password without timing-sensitive byte equality."""
+        """Verify a password using a constant-time hash comparison."""
         if self.__password_hash is None or self.__password_salt is None:
             return False
         candidate = hashlib.pbkdf2_hmac(
-            "sha256", password.encode("utf-8"), self.__password_salt, PASSWORD_ITERATIONS
+            "sha256",
+            password.encode("utf-8"),
+            self.__password_salt,
+            PASSWORD_ITERATIONS,
         )
         return hmac.compare_digest(candidate, self.__password_hash)
 
@@ -64,6 +79,7 @@ class User:
         self.active = False
 
     def __str__(self) -> str:
+        """Represent this user without exposing a password."""
         return (
             f"User(username={self.username!r}, email={self.email!r}, "
             f"role={self.role!r}, active={self.active})"
@@ -80,24 +96,30 @@ class Admin(User):
         permissions: set[str] | None = None,
         active: bool = True,
     ) -> None:
+        """Initialize an administrator with optional permissions."""
         super().__init__(username, email, role="admin", active=active)
         self.permissions = set(permissions or set())
 
     def grant_permission(self, permission: str) -> None:
+        """Add a named permission to this administrator."""
         if not permission.strip():
             raise ValueError("permission must not be empty")
         self.permissions.add(permission)
 
     def revoke_permission(self, permission: str) -> None:
+        """Remove a named permission if it is present."""
         self.permissions.discard(permission)
 
     def has_permission(self, permission: str) -> bool:
+        """Return whether a permission is granted."""
         return permission in self.permissions
 
     def __str__(self) -> str:
+        """Display administrative permissions and status."""
         permissions = ", ".join(sorted(self.permissions)) or "none"
         return (
-            f"Admin(username={self.username!r}, permissions=[{permissions}], active={self.active})"
+            f"Admin(username={self.username!r}, "
+            f"permissions=[{permissions}], active={self.active})"
         )
 
 
@@ -111,13 +133,16 @@ class Session:
 
     @classmethod
     def create(cls, ip: str) -> Session:
+        """Create a new UTC timestamped session for an IP address."""
         now = datetime.now(timezone.utc)
         return cls(ip=ip, login_time=now, last_activity=now)
 
     def touch(self) -> None:
+        """Update the last-activity timestamp."""
         self.last_activity = datetime.now(timezone.utc)
 
     def is_active(self, timeout_sec: int) -> bool:
+        """Check whether the session is within its timeout."""
         if timeout_sec <= 0:
             raise ValueError("timeout_sec must be positive")
         now = datetime.now(timezone.utc)
@@ -137,12 +162,17 @@ class AuditLog:
     """In-memory audit trail that never stores credentials."""
 
     def __init__(self) -> None:
+        """Initialize the in-memory record collection."""
         self.records: list[AuditEntry] = []
 
     def add_log(self, username: str, action: str) -> None:
-        self.records.append(AuditEntry(datetime.now(timezone.utc), username, action))
+        """Record an action for a username and current timestamp."""
+        self.records.append(
+            AuditEntry(datetime.now(timezone.utc), username, action)
+        )
 
     def show_all(self) -> list[AuditEntry]:
+        """Return a copy of the recorded events."""
         return list(self.records)
 
 
@@ -158,6 +188,7 @@ class UserAccount:
         session: Session | None = None,
         audit_log: AuditLog | None = None,
     ) -> None:
+        """Build an account with its user, session, and audit log."""
         if not isinstance(user, User):
             raise TypeError("user must be a User instance")
         self.user = user
@@ -165,7 +196,7 @@ class UserAccount:
         self.audit_log = audit_log if audit_log is not None else AuditLog()
 
     def login(self, username: str, password: str, ip: str) -> bool:
-        """Authenticate; a failed attempt does not create or extend a session."""
+        """Authenticate without extending a session on failure."""
         if (
             username != self.user.username
             or not self.user.active
@@ -179,27 +210,40 @@ class UserAccount:
         return True
 
     def is_authenticated(self) -> bool:
+        """Check the user status and active session."""
         return bool(
-            self.session and self.session.is_active(self.SESSION_TIMEOUT_SEC) and self.user.active
+            self.session
+            and self.session.is_active(self.SESSION_TIMEOUT_SEC)
+            and self.user.active
         )
 
     def logout(self) -> None:
+        """Record logout and clear an existing session."""
         if self.session is not None:
             self.audit_log.add_log(self.user.username, "logout")
             self.session = None
 
     def __getitem__(self, key: str) -> Any:
+        """Return a supported account attribute by key."""
         if key not in self._ALLOWED_KEYS:
             raise KeyError(key)
         return getattr(self, key)
 
     def __setitem__(self, key: str, value: Any) -> None:
+        """Update a supported account attribute with type checks."""
         if key not in self._ALLOWED_KEYS:
             raise KeyError(key)
-        expected = {"user": User, "session": Session, "audit_log": AuditLog}[key]
+        expected_types = {
+            "user": User,
+            "session": Session,
+            "audit_log": AuditLog,
+        }
+        expected = expected_types[key]
         if value is None and key == "session":
             setattr(self, key, value)
             return
         if not isinstance(value, expected):
-            raise TypeError(f"{key} must be an instance of {expected.__name__}")
+            raise TypeError(
+                f"{key} must be an instance of {expected.__name__}"
+            )
         setattr(self, key, value)

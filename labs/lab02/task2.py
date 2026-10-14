@@ -10,7 +10,10 @@ from pathlib import Path
 from typing import Any
 
 LOG = logging.getLogger(__name__)
-MESSAGE_SEPARATOR = re.compile(r"^\s*---\s*MESSAGE\s*---\s*$", re.IGNORECASE | re.MULTILINE)
+MESSAGE_SEPARATOR = re.compile(
+    r"^\s*---\s*MESSAGE\s*---\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
 HEADER_LINE = re.compile(r"^([A-Za-z][A-Za-z0-9-]*):\s*(.*)$")
 EMAIL_RE = re.compile(
     r"[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
@@ -69,7 +72,7 @@ def _parse_message_block(block: str) -> dict[str, Any]:
 
 
 def load_mail_messages(path: Path) -> list[dict[str, Any]]:
-    """Read and parse the sample dump. Messages are separated by --- MESSAGE ---."""
+    """Read sample mail headers separated by MESSAGE markers."""
     try:
         text = path.read_text(encoding="utf-8-sig")
     except OSError as exc:
@@ -77,7 +80,9 @@ def load_mail_messages(path: Path) -> list[dict[str, Any]]:
     if not text.strip():
         raise ValueError(f"Mail log '{path}' is empty")
 
-    blocks = [part.strip() for part in MESSAGE_SEPARATOR.split(text) if part.strip()]
+    blocks = [
+        part.strip() for part in MESSAGE_SEPARATOR.split(text) if part.strip()
+    ]
     messages = [_parse_message_block(block) for block in blocks]
     messages = [message for message in messages if any(message.values())]
     if not messages:
@@ -87,13 +92,15 @@ def load_mail_messages(path: Path) -> list[dict[str, Any]]:
 
 
 def load_suspicious_keywords(path: Path) -> list[str]:
-    """Load one suspicious phrase per line; blank lines and comments are skipped."""
+    """Load nonblank, noncomment keyword entries from a file."""
     try:
         lines = path.read_text(encoding="utf-8-sig").splitlines()
     except OSError as exc:
         raise ValueError(f"Cannot read keyword file '{path}': {exc}") from exc
     keywords = [
-        line.strip() for line in lines if line.strip() and not line.lstrip().startswith("#")
+        line.strip()
+        for line in lines
+        if line.strip() and not line.lstrip().startswith("#")
     ]
     if not keywords:
         raise ValueError(f"Keyword list '{path}' contains no keywords")
@@ -105,8 +112,12 @@ def extract_email(value: str) -> str:
     match = EMAIL_RE.search(value or "")
     if not match:
         return ""
-    # The regex's first group captures only the domain, so preserve the local part.
-    address = re.search(r"[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9.-]+", match.group(0), re.IGNORECASE)
+    # Keep the address rather than only the captured domain.
+    address = re.search(
+        r"[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9.-]+",
+        match.group(0),
+        re.IGNORECASE,
+    )
     return address.group(0).rstrip(".") if address else ""
 
 
@@ -126,13 +137,18 @@ def find_suspicious_keywords(subject: str, keywords: list[str]) -> list[str]:
         normalized_keyword = " ".join(keyword.casefold().split())
         if not normalized_keyword:
             continue
-        pattern = re.compile(r"(?<!\w)" + re.escape(normalized_keyword) + r"(?!\w)", re.IGNORECASE)
+        pattern = re.compile(
+            r"(?<!\w)" + re.escape(normalized_keyword) + r"(?!\w)",
+            re.IGNORECASE,
+        )
         if pattern.search(normalized_subject) and keyword not in found:
             found.append(keyword)
     return found
 
 
-def analyze_message(message: dict[str, Any], keywords: list[str]) -> dict[str, Any]:
+def analyze_message(
+    message: dict[str, Any], keywords: list[str]
+) -> dict[str, Any]:
     """Score a message using transparent heuristic phishing indicators."""
     from_address = extract_email(str(message.get("from", "")))
     return_path = str(message.get("return_path", ""))
@@ -144,24 +160,35 @@ def analyze_message(message: dict[str, Any], keywords: list[str]) -> dict[str, A
     stopwords = find_suspicious_keywords(subject, keywords)
     received_count = len(message.get("received", []))
 
-    from_return_mismatch = bool(from_domain and return_domain and from_domain != return_domain)
-    from_reply_mismatch = bool(from_domain and reply_domain and from_domain != reply_domain)
+    from_return_mismatch = bool(
+        from_domain and return_domain and from_domain != return_domain
+    )
+    from_reply_mismatch = bool(
+        from_domain and reply_domain and from_domain != reply_domain
+    )
 
     findings: list[str] = []
     score = 0
     if from_return_mismatch:
         score += 30
-        findings.append(f"From/Return-Path domain mismatch: {from_domain} != {return_domain}")
+        findings.append(
+            f"From/Return-Path domain mismatch: {from_domain} != "
+            f"{return_domain}"
+        )
     if from_reply_mismatch:
         score += 30
-        findings.append(f"From/Reply-To domain mismatch: {from_domain} != {reply_domain}")
+        findings.append(
+            f"From/Reply-To domain mismatch: {from_domain} != {reply_domain}"
+        )
     if stopwords:
         points = min(20, len(stopwords) * 10)
         score += points
         findings.append("Suspicious subject keywords: " + ", ".join(stopwords))
     if received_count >= 4:
         score += 20
-        findings.append(f"Unusually long Received chain: {received_count} header(s)")
+        findings.append(
+            f"Unusually long Received chain: {received_count} header(s)"
+        )
     if not findings:
         findings.append("No configured phishing indicators found")
 
@@ -176,10 +203,24 @@ def analyze_message(message: dict[str, Any], keywords: list[str]) -> dict[str, A
         risk_level = "LOW"
 
     message_id = str(message.get("message_id") or "unknown")
-    if from_return_mismatch or from_reply_mismatch or stopwords or received_count >= 4:
-        LOG.warning("%s: %s phishing indicator(s), risk %s/100", message_id, len(findings), score)
+    if (
+        from_return_mismatch
+        or from_reply_mismatch
+        or stopwords
+        or received_count >= 4
+    ):
+        LOG.warning(
+            "%s: %s phishing indicator(s), risk %s/100",
+            message_id,
+            len(findings),
+            score,
+        )
     else:
-        LOG.info("%s: no configured indicators, risk %s/100", message_id, score)
+        LOG.info(
+            "%s: no configured indicators, risk %s/100",
+            message_id,
+            score,
+        )
 
     return {
         "message_id": message_id,
@@ -200,7 +241,9 @@ def analyze_message(message: dict[str, Any], keywords: list[str]) -> dict[str, A
     }
 
 
-def run_audit(mail_log: Path, keywords_file: Path, output_csv: Path) -> list[dict[str, Any]]:
+def run_audit(
+    mail_log: Path, keywords_file: Path, output_csv: Path
+) -> list[dict[str, Any]]:
     """Analyze email messages and save the findings as UTF-8 CSV."""
     messages = load_mail_messages(mail_log)
     keywords = load_suspicious_keywords(keywords_file)
@@ -208,19 +251,26 @@ def run_audit(mail_log: Path, keywords_file: Path, output_csv: Path) -> list[dic
     try:
         output_csv.parent.mkdir(parents=True, exist_ok=True)
         with output_csv.open("w", encoding="utf-8-sig", newline="") as file:
-            writer = csv.DictWriter(file, fieldnames=CSV_FIELDS, extrasaction="ignore")
+            writer = csv.DictWriter(
+                file, fieldnames=CSV_FIELDS, extrasaction="ignore"
+            )
             writer.writeheader()
             writer.writerows(results)
     except OSError as exc:
-        raise ValueError(f"Cannot write CSV report '{output_csv}': {exc}") from exc
+        raise ValueError(
+            f"Cannot write CSV report '{output_csv}': {exc}"
+        ) from exc
     LOG.info("CSV report written: %s", output_csv)
     return results
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Create the command-line parser for audit options."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--mail-log", type=Path, default=Path("labs/lab02/data/data_v12/mail_headers.log")
+        "--mail-log",
+        type=Path,
+        default=Path("labs/lab02/data/data_v12/mail_headers.log"),
     )
     parser.add_argument(
         "--suspicious-keywords",
@@ -232,11 +282,16 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("labs/lab02/data/phishing_report.csv"),
     )
-    parser.add_argument("--debug", action="store_true", help="enable detailed diagnostic logging")
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="enable detailed diagnostic logging",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run a requested audit and return the CLI exit status."""
     args = build_parser().parse_args(argv)
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.INFO,
@@ -254,7 +309,8 @@ def main(argv: list[str] | None = None) -> int:
     print("-" * 95)
     for row in rows:
         print(
-            f"{row['message_id'].split('@', maxsplit=1)[0]:18} {row['risk_level']:10} "
+            f"{row['message_id'].split('@', maxsplit=1)[0]:18} "
+            f"{row['risk_level']:10} "
             f"{row['risk_score']:>3}/100 {row['received_count']:>8}  "
             f"{row['subject'][:48]}"
         )
