@@ -1,4 +1,4 @@
-"""Email-header and phishing-indicator auditor for Laboratory 2, variant 12."""
+"""Аналізатор поштових заголовків і фішингу, варіант 12."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ CSV_FIELDS = [
 
 
 def _parse_message_block(block: str) -> dict[str, Any]:
-    """Parse one RFC-822-like sample block, including folded header lines."""
+    """Розбирає один блок заголовків із можливими переносами."""
     headers: dict[str, list[str]] = {}
     current_name: str | None = None
     for line in block.splitlines():
@@ -72,7 +72,7 @@ def _parse_message_block(block: str) -> dict[str, Any]:
 
 
 def load_mail_messages(path: Path) -> list[dict[str, Any]]:
-    """Read sample mail headers separated by MESSAGE markers."""
+    """Читає листи, розділені маркерами MESSAGE."""
     try:
         text = path.read_text(encoding="utf-8-sig")
     except OSError as exc:
@@ -92,7 +92,7 @@ def load_mail_messages(path: Path) -> list[dict[str, Any]]:
 
 
 def load_suspicious_keywords(path: Path) -> list[str]:
-    """Load nonblank, noncomment keyword entries from a file."""
+    """Зчитує непорожні фрази зі словника, оминаючи коментарі."""
     try:
         lines = path.read_text(encoding="utf-8-sig").splitlines()
     except OSError as exc:
@@ -108,11 +108,11 @@ def load_suspicious_keywords(path: Path) -> list[str]:
 
 
 def extract_email(value: str) -> str:
-    """Return an email address from a header value or an empty string."""
+    """Виділяє email із заголовка або повертає порожній рядок."""
     match = EMAIL_RE.search(value or "")
     if not match:
         return ""
-    # Keep the address rather than only the captured domain.
+    # Зберігаємо повну адресу, а не лише домен із групи регулярного виразу.
     address = re.search(
         r"[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9.-]+",
         match.group(0),
@@ -122,7 +122,7 @@ def extract_email(value: str) -> str:
 
 
 def extract_domain(value: str) -> str:
-    """Extract a normalized email domain from a header value."""
+    """Виділяє та нормалізує домен поштової адреси."""
     address = extract_email(value)
     if "@" not in address:
         return ""
@@ -130,7 +130,7 @@ def extract_domain(value: str) -> str:
 
 
 def find_suspicious_keywords(subject: str, keywords: list[str]) -> list[str]:
-    """Find configured phrases in a subject without regard to letter case."""
+    """Шукає підозрілі фрази в темі без урахування регістру."""
     normalized_subject = " ".join(subject.casefold().split())
     found: list[str] = []
     for keyword in keywords:
@@ -149,7 +149,7 @@ def find_suspicious_keywords(subject: str, keywords: list[str]) -> list[str]:
 def analyze_message(
     message: dict[str, Any], keywords: list[str]
 ) -> dict[str, Any]:
-    """Score a message using transparent heuristic phishing indicators."""
+    """Оцінює лист за визначеними ознаками фішингу."""
     from_address = extract_email(str(message.get("from", "")))
     return_path = str(message.get("return_path", ""))
     reply_to = str(message.get("reply_to", ""))
@@ -244,7 +244,7 @@ def analyze_message(
 def run_audit(
     mail_log: Path, keywords_file: Path, output_csv: Path
 ) -> list[dict[str, Any]]:
-    """Analyze email messages and save the findings as UTF-8 CSV."""
+    """Аналізує листи та зберігає результати у CSV UTF-8."""
     messages = load_mail_messages(mail_log)
     keywords = load_suspicious_keywords(keywords_file)
     results = [analyze_message(message, keywords) for message in messages]
@@ -265,7 +265,7 @@ def run_audit(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Create the command-line parser for audit options."""
+    """Створює обробник параметрів командного рядка."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--mail-log",
@@ -291,7 +291,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run a requested audit and return the CLI exit status."""
+    """Виконує аудит і повертає код завершення."""
     args = build_parser().parse_args(argv)
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.INFO,

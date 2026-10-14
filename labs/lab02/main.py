@@ -1,4 +1,4 @@
-"""Entry point for the OOP demo and variant 12 email phishing audit."""
+"""Точка входу для демонстрації ООП та аналізу поштових заголовків."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from labs.lab02.task2 import run_audit
 
 
 def demo() -> None:
-    """Demonstrate account access, session timeout, and auditing."""
+    """Показує вхід, перевірку сесії та журнал дій користувача."""
     user = User("student12", "student12@example.com")
     user.set_password("LabPassword12!")
     account = UserAccount(user)
@@ -54,7 +54,7 @@ def demo() -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Create a parser for the demo and audit commands."""
+    """Створює обробник аргументів для команд demo й analyze."""
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser(
@@ -87,7 +87,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the selected command and return its exit code."""
+    """Виконує вибрану команду та повертає код завершення."""
     args = build_parser().parse_args(argv)
     if args.command == "demo":
         demo()
