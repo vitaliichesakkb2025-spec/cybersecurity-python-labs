@@ -12,6 +12,7 @@
 | --- | --- | --- |
 | **№1 — Основи Python, Git і стандарти коду** | Перевірка паролів, контроль доступу, хешування та журналювання | [ЛР №1 — код та README](labs/lab01/README.md) |
 | **№2 — ООП і консольні утиліти** | Користувачі, ролі, сесії, аудит; **варіант 12:** аналіз поштових заголовків і фішингових індикаторів | [ЛР №2 — код та README](labs/lab02/README.md) |
+| **№3 — FastAPI та SQLite** | REST API для обліку використання сховищ (варіант 12), Pydantic, SQLite, транзакції та 16 автоматичних тестів | [ЛР №3 — код та README](labs/lab03/README.md) |
 
 Кожна лабораторна має **власний README**. Відкрийте посилання потрібної роботи, щоб побачити постановку завдань, файли та приклади запуску.
 
@@ -42,6 +43,13 @@ python -m labs.lab02.main demo
 python -m labs.lab02.main analyze
 ```
 
+**ЛР №3 — FastAPI та SQLite**
+```powershell
+python -m labs.lab03.database
+python -m labs.lab03.seed
+uvicorn labs.lab03.main:app --reload --host 127.0.0.1 --port 8000
+```
+
 **Тести та перевірки**
 ```powershell
 python -m unittest discover -s tests -v
@@ -57,7 +65,8 @@ ruff format --check .
 cybersecurity-python-labs/
 ├── labs/
 │   ├── lab01/                 # Код ЛР №1 та README
-│   └── lab02/                 # Код ЛР №2, README і data/data_v12
+│   ├── lab02/                 # Код ЛР №2, README і data/data_v12
+│   └── lab03/                 # FastAPI, SQLite, README та seed.json
 ├── shared/                   # Спільні модулі
 ├── tests/
 │   ├── test_lab01.py         # Тести ЛР №1

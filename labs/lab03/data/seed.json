@@ -1,0 +1,17 @@
+{
+  "categories": [
+    {"id": 1, "name": "logs"},
+    {"id": 2, "name": "backups"},
+    {"id": 3, "name": "archive"}
+  ],
+  "records": [
+    {"code": "V12-01", "title": "Вимірювання сховища 01", "category_id": 1, "value": 90.0, "status": "new"},
+    {"code": "V12-02", "title": "Вимірювання сховища 02", "category_id": 2, "value": 60.0, "status": "in_progress"},
+    {"code": "V12-03", "title": "Вимірювання сховища 03", "category_id": 3, "value": 45.0, "status": "done"},
+    {"code": "V12-04", "title": "Вимірювання сховища 04", "category_id": 1, "value": 95.0, "status": "new"},
+    {"code": "V12-05", "title": "Вимірювання сховища 05", "category_id": 2, "value": 83.0, "status": "done"},
+    {"code": "V12-06", "title": "Вимірювання сховища 06", "category_id": 3, "value": 70.0, "status": "in_progress"},
+    {"code": "V12-07", "title": "Вимірювання сховища 07", "category_id": 1, "value": 85.0, "status": "done"},
+    {"code": "V12-08", "title": "Вимірювання сховища 08", "category_id": 2, "value": 88.0, "status": "new"}
+  ]
+}
