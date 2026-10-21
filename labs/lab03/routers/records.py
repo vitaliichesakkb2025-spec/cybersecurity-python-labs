@@ -25,9 +25,7 @@ WRITE_ERRORS = NOT_FOUND | CONFLICT
 )
 def get_records(
     category_id: Annotated[int | None, Query(gt=0)] = None,
-    status_filter: Annotated[
-        Status | None, Query(alias="status")
-    ] = None,
+    status_filter: Annotated[Status | None, Query(alias="status")] = None,
     min_value: Annotated[
         float | None, Query(ge=0, le=100, allow_inf_nan=False)
     ] = None,
@@ -54,9 +52,7 @@ def get_records(
     summary="Атомарно додати пакет вимірювань",
 )
 def add_bulk(
-    payload: Annotated[
-        list[RecordCreate], Body(min_length=1, max_length=100)
-    ],
+    payload: Annotated[list[RecordCreate], Body(min_length=1, max_length=100)],
 ) -> list[dict]:
     """Або додати весь пакет з 1–100 записів, або не додати нічого."""
     return repository.create_records_bulk(payload)

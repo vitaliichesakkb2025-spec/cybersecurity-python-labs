@@ -161,9 +161,7 @@ def create_record(data: RecordCreate) -> dict[str, Any]:
             ) from exc
 
 
-def replace_record(
-    record_id: int, data: RecordReplace
-) -> dict[str, Any]:
+def replace_record(record_id: int, data: RecordReplace) -> dict[str, Any]:
     """Повністю замінити змінювані поля без заміни ID."""
     with closing(get_connection()) as connection:
         try:

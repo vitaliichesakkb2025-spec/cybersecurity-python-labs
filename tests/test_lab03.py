@@ -77,9 +77,7 @@ class Lab03Tests(unittest.TestCase):
             self.client.get(f"/records/{record_id}").status_code, 200
         )
         replacement = self.record("V12-CHANGED", category_id=2)
-        updated = self.client.put(
-            f"/records/{record_id}", json=replacement
-        )
+        updated = self.client.put(f"/records/{record_id}", json=replacement)
         self.assertEqual(updated.status_code, 200)
         self.assertEqual(updated.json()["category_name"], "backups")
         self.assertEqual(updated.json()["id"], record_id)
@@ -98,21 +96,15 @@ class Lab03Tests(unittest.TestCase):
         self.assertEqual(
             [r["code"] for r in first.json()], ["V12-01", "V12-04"]
         )
-        min_filtered = self.client.get(
-            "/records", params={"min_value": 90}
-        )
+        min_filtered = self.client.get("/records", params={"min_value": 90})
         self.assertEqual(
             [r["code"] for r in min_filtered.json()],
             ["V12-01", "V12-04"],
         )
-        page = self.client.get(
-            "/records", params={"limit": 2, "offset": 2}
-        )
+        page = self.client.get("/records", params={"limit": 2, "offset": 2})
         self.assertEqual([r["id"] for r in page.json()], [3, 4])
         self.assertEqual(
-            self.client.get(
-                "/records", params={"category_id": 99}
-            ).json(),
+            self.client.get("/records", params={"category_id": 99}).json(),
             [],
         )
         self.assertEqual(
@@ -166,30 +158,33 @@ class Lab03Tests(unittest.TestCase):
             ).status_code,
             404,
         )
-        self.assertEqual(self.client.put(
-            "/records/1", json=self.record("V12-NOCAT", 999)
-        ).status_code, 404)
+        self.assertEqual(
+            self.client.put(
+                "/records/1", json=self.record("V12-NOCAT", 999)
+            ).status_code,
+            404,
+        )
 
     def test_08_duplicate_code_and_category_409(self) -> None:
         """Не дозволяти повторні code або назву категорії."""
-        self.assertEqual(self.client.post(
-            "/records", json=self.record("V12-01")
-        ).status_code, 409)
-        self.assertEqual(self.client.post(
-            "/categories", json={"name": "logs"}
-        ).status_code, 409)
+        self.assertEqual(
+            self.client.post(
+                "/records", json=self.record("V12-01")
+            ).status_code,
+            409,
+        )
+        self.assertEqual(
+            self.client.post("/categories", json={"name": "logs"}).status_code,
+            409,
+        )
         self.assertEqual(self.count(), 8)
 
     def test_09_delete_categories(self) -> None:
         """Непорожня категорія дає 409, порожня — 204."""
         self.assertEqual(self.client.delete("/categories/1").status_code, 409)
-        created = self.client.post(
-            "/categories", json={"name": "temp_store"}
-        )
+        created = self.client.post("/categories", json={"name": "temp_store"})
         self.assertEqual(created.status_code, 201)
-        result = self.client.delete(
-            f"/categories/{created.json()['id']}"
-        )
+        result = self.client.delete(f"/categories/{created.json()['id']}")
         self.assertEqual(result.status_code, 204)
         self.assertEqual(result.content, b"")
 
@@ -236,18 +231,14 @@ class Lab03Tests(unittest.TestCase):
     def test_13_sql_injection_is_literal(self) -> None:
         """SQL-подібний пошук не змінює жодного запису."""
         before = self.count()
-        response = self.client.get(
-            "/records", params={"q": "' OR 1=1 --"}
-        )
+        response = self.client.get("/records", params={"q": "' OR 1=1 --"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [])
         self.assertEqual(self.count(), before)
 
     def test_14_data_persists_after_restart(self) -> None:
         """Дані залишаються в SQLite після нового клієнта застосунку."""
-        created = self.client.post(
-            "/records", json=self.record("V12-RESTART")
-        )
+        created = self.client.post("/records", json=self.record("V12-RESTART"))
         self.assertEqual(created.status_code, 201)
         record_id = created.json()["id"]
         with TestClient(app) as restarted:
