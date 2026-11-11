@@ -13,6 +13,7 @@
 | **№1 — Основи Python, Git і стандарти коду** | Перевірка паролів, контроль доступу, хешування та журналювання | [ЛР №1 — код та README](labs/lab01/README.md) |
 | **№2 — ООП і консольні утиліти** | Користувачі, ролі, сесії, аудит; **варіант 12:** аналіз поштових заголовків і фішингових індикаторів | [ЛР №2 — код та README](labs/lab02/README.md) |
 | **№3 — FastAPI та SQLite** | REST API для обліку використання сховищ (варіант 12), Pydantic, SQLite, транзакції та 16 автоматичних тестів | [ЛР №3 — код та README](labs/lab03/README.md) |
+| **№4 — NVD API, CVSS та pytest** | Аналіз CVE, критерій варіанта 12, локальні й HTTP-тести без мережі | [ЛР №4 — код та README](labs/lab04/README.md) |
 
 Кожна лабораторна має **власний README**. Відкрийте посилання потрібної роботи, щоб побачити постановку завдань, файли та приклади запуску.
 
@@ -48,6 +49,12 @@ python -m labs.lab02.main analyze
 python -m labs.lab03.database
 python -m labs.lab03.seed
 uvicorn labs.lab03.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+**ЛР №4 — аналіз CVE у локальному режимі**
+```powershell
+python -m labs.lab04.main --cve CVE-2099-10001 --input labs/lab04/data/nvd_sample.json
+python -m pytest labs/lab04/tests -q
 ```
 
 **Тести та перевірки**
