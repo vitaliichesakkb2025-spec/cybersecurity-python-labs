@@ -45,8 +45,17 @@ def test_original_fixture_is_other(payload):
         "expected": "LOW",
     }
     assert list(result) == [
-        "cve_id", "variant", "description", "vuln_status", "cvss_version",
-        "score", "score_source", "vector", "rule", "observed", "decision",
+        "cve_id",
+        "variant",
+        "description",
+        "vuln_status",
+        "cvss_version",
+        "score",
+        "score_source",
+        "vector",
+        "rule",
+        "observed",
+        "decision",
     ]
 
 

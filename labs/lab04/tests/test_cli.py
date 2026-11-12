@@ -61,7 +61,7 @@ def test_invalid_structure_is_error(tmp_path, capsys):
     ["cve-2099-10001", "CVE-2-1000", "CVE-2099-123", "CVE-2099-1000a"],
 )
 def test_cve_format_errors(bad, capsys):
-    """argparse відхиляє CVE без повного збігу з шаблоном."""
+    """Argparse відхиляє CVE без повного збігу з шаблоном."""
     with pytest.raises(SystemExit) as error:
         main.main(["--cve", bad, "--input", str(SAMPLE)])
     assert error.value.code == 2

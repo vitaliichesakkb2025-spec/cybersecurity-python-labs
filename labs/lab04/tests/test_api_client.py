@@ -25,7 +25,8 @@ def test_build_headers_with_and_without_key(monkeypatch):
     assert api_client.build_headers() == {"Accept": "application/json"}
     monkeypatch.setenv("NVD_API_KEY", "  example-key  ")
     assert api_client.build_headers() == {
-        "Accept": "application/json", "apiKey": "example-key"
+        "Accept": "application/json",
+        "apiKey": "example-key",
     }
 
 

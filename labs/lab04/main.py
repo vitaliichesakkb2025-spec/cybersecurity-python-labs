@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from labs.lab04 import api_client, analysis
+from labs.lab04 import analysis, api_client
 from shared.student import VARIANT_NUMBER
 
 CVE_PATTERN = re.compile(r"CVE-[0-9]{4}-[0-9]{4,}")
