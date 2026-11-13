@@ -30,6 +30,32 @@ def test_build_headers_with_and_without_key(monkeypatch):
     }
 
 
+def test_key_from_env_file():
+    """Зчитати вигаданий ключ зі створеного локального .env."""
+    api_client.ENV_FILE.write_text(
+        "NVD_API_KEY=  training-example-key\n", encoding="utf-8"
+    )
+    assert api_client.build_headers() == {
+        "Accept": "application/json",
+        "apiKey": "training-example-key",
+    }
+
+
+def test_environment_key_has_priority_over_env_file(monkeypatch):
+    """Явна змінна середовища має пріоритет над .env."""
+    api_client.ENV_FILE.write_text(
+        "NVD_API_KEY=file-example-key\n", encoding="utf-8"
+    )
+    monkeypatch.setenv("NVD_API_KEY", "os-example-key")
+    assert api_client.build_headers()["apiKey"] == "os-example-key"
+
+
+def test_empty_key_in_env_file_is_ignored():
+    """Порожній ключ не передається в заголовках."""
+    api_client.ENV_FILE.write_text("NVD_API_KEY=  \n", encoding="utf-8")
+    assert api_client.build_headers() == {"Accept": "application/json"}
+
+
 def test_fetch_uses_expected_request(monkeypatch):
     """Задати один GET з cveId, таймаутом і без редиректів."""
     payload = {"startIndex": 0, "totalResults": 0, "vulnerabilities": []}

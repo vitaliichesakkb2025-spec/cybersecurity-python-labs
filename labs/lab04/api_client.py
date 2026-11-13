@@ -1,11 +1,14 @@
 """Безпечне отримання однієї відповіді NVD CVE API 2.0."""
 
 import os
+from pathlib import Path
 
 import requests
+from dotenv import dotenv_values
 
 NVD_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 REQUEST_TIMEOUT = (3.05, 10)
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class NVDClientError(RuntimeError):
@@ -13,9 +16,11 @@ class NVDClientError(RuntimeError):
 
 
 def build_headers() -> dict[str, str]:
-    """Додати ключ із середовища лише за непорожнього значення."""
+    """Додати ключ зі змінної середовища або локального .env."""
     headers = {"Accept": "application/json"}
     key = os.getenv("NVD_API_KEY", "").strip()
+    if not key:
+        key = (dotenv_values(ENV_FILE).get("NVD_API_KEY") or "").strip()
     if key:
         headers["apiKey"] = key
     return headers
