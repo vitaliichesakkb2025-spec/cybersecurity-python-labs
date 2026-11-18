@@ -73,11 +73,13 @@ cybersecurity-python-labs/
 ├── labs/
 │   ├── lab01/                 # Код ЛР №1 та README
 │   ├── lab02/                 # Код ЛР №2, README і data/data_v12
-│   └── lab03/                 # FastAPI, SQLite, README та seed.json
+│   ├── lab03/                 # FastAPI, SQLite, README та seed.json
+│   └── lab04/                 # NVD API, CVSS, data/ і власні тести pytest
 ├── shared/                   # Спільні модулі
 ├── tests/
 │   ├── test_lab01.py         # Тести ЛР №1
-│   └── test_lab02.py         # Тести ЛР №2
+│   ├── test_lab02.py         # Тести ЛР №2
+│   └── test_lab03.py         # Тести ЛР №3
 ├── pyproject.toml            # Налаштування Ruff
 ├── requirements.txt          # Залежності
 └── README.md                 # Навігація по лабораторних
